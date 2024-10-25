@@ -7,7 +7,7 @@ class YelpService {
   YelpService({Dio? dio}) : _dio = dio ?? Dio();
   final String _apiKey = dotenv.env['API_KEY'] ?? '';
 
-  Future<List<dynamic>> fetchBusinesses(String location) async {
+  Future<List<dynamic>> fetchBusinesses(String location, {int page = 1}) async {
     try {
       final response = await _dio.get(
         'https://api.yelp.com/v3/businesses/search',
@@ -19,6 +19,7 @@ class YelpService {
         queryParameters: {
           'location': location,
           'limit': 20,
+          'offset': (page - 1) * 20,
         },
       );
 

@@ -1,13 +1,13 @@
 import 'package:bizhunt/screens/home_screen.dart';
 import 'package:bizhunt/services/yelp_service.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-Future main() async {
+import 'bloc/business_bloc.dart';
+
+void main() async {
   await dotenv.load(fileName: ".env");
-  YelpService yelpService = YelpService();
-  final response = await yelpService.fetchBusinesses('NYC');
-  print(response);
   runApp(const MyApp());
 }
 
@@ -16,13 +16,19 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final YelpService yelpService = YelpService();
     return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
+      debugShowCheckedModeBanner: false,
+      title: 'BizHunt',
+      home: BlocProvider(
+        lazy: false,
+        create: (_) {
+          final businessBloc = BusinessBloc(yelpService);
+          businessBloc.add(FetchBusinesses('NYC'));
+          return businessBloc;
+        },
+        child: HomeScreen(),
       ),
-      home: HomeScreen(),
     );
   }
 }

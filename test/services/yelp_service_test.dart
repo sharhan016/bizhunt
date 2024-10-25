@@ -22,7 +22,6 @@ void main() {
     });
 
     test('fetches businesses successfully with specific values', () async {
-      // Arrange: Set up mock response data with specific values
       final mockResponseData = {
         'businesses': [
           {
@@ -37,7 +36,6 @@ void main() {
         ]
       };
 
-      // Mock the Dio response to return our mock data
       when(mockDio.get(any,
               options: anyNamed('options'),
               queryParameters: anyNamed('queryParameters')))
@@ -51,14 +49,11 @@ void main() {
           List<Map<String, dynamic>>.from(
               await yelpService.fetchBusinesses('NYC'));
 
-      // Assert: Verify the expected values
       expect(businesses, isNotEmpty);
 
-      // Look for the specific business by name
       final business = businesses.firstWhere((b) => b['name'] == 'Rubirosa',
           orElse: () => {});
 
-      // Check if "Rubirosa" is found, and then verify specific values
       expect(business, isNotNull);
       expect(business['location']['address1'], '235 Mulberry St');
       expect(business['location']['city'], 'New York');
