@@ -1,4 +1,6 @@
+import 'package:bizhunt/utils/date_formatter.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 
 class BusinessDetailScreen extends StatelessWidget {
   final Map<String, dynamic> business;
@@ -64,34 +66,36 @@ class BusinessDetailScreen extends StatelessWidget {
               ),
               SizedBox(height: 8),
 
-              // Review Count and Rating Stars
               Row(
                 children: [
+                  // Review Count Text
                   Text(
                     '${business['review_count']} Reviews',
-                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                    style: const TextStyle(fontSize: 16, color: Colors.grey),
                   ),
-                  SizedBox(width: 8),
-                  Row(
-                    children: List.generate(5, (index) {
-                      return Icon(
-                        index < business['rating']
-                            ? Icons.star
-                            : Icons.star_border,
-                        color: Colors.amber,
-                      );
-                    }),
+                  const SizedBox(width: 8),
+
+                  // Rating Bar
+                  RatingBarIndicator(
+                    rating: business['rating'].toDouble(),
+                    itemBuilder: (context, _) => const Icon(
+                      Icons.star,
+                      color: Colors.amber,
+                    ),
+                    itemCount: 5,
+                    itemSize: 15.0,
+                    direction: Axis.horizontal,
                   ),
                 ],
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
 
               // Business Address
-              Text(
+              const Text(
                 'Address',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
                 business['location']['display_address'].join(', '),
                 style: TextStyle(fontSize: 16),
@@ -109,7 +113,7 @@ class BusinessDetailScreen extends StatelessWidget {
                           TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     SizedBox(height: 8),
-                    ..._getFormattedBusinessHours(business['business_hours'])
+                    ...getFormattedBusinessHours(business['business_hours'])
                   ],
                 ),
               SizedBox(height: 16),
@@ -146,8 +150,25 @@ class BusinessDetailScreen extends StatelessWidget {
     );
   }
 
-  List<Widget> _getFormattedBusinessHours(List<dynamic> businessHours) {
+  List<Widget> getFormattedBusinessHours(List<dynamic> businessHours) {
+    Map<String, List<String>> hoursMap = {
+      'Sunday': [],
+      'Monday': [],
+      'Tuesday': [],
+      'Wednesday': [],
+      'Thursday': [],
+      'Friday': [],
+      'Saturday': []
+    };
+
     var hoursList = businessHours[0]['open'];
+    for (var hour in hoursList) {
+      String day = getDayName(hour['day']);
+      String start = formatTime(hour['start']);
+      String end = formatTime(hour['end']);
+      hoursMap[day]?.add('$start - $end');
+    }
+
     List<String> daysOfWeek = [
       'Sunday',
       'Monday',
@@ -157,21 +178,50 @@ class BusinessDetailScreen extends StatelessWidget {
       'Friday',
       'Saturday'
     ];
+    List<String> currentDays = [];
+    String lastTiming = '';
+    List<Map<String, String>> consolidatedHours = [];
 
-    return hoursList.map<Widget>((hour) {
-      String day = daysOfWeek[hour['day']];
-      String start = _formatTime(hour['start']);
-      String end = _formatTime(hour['end']);
+    for (String day in daysOfWeek) {
+      String dayTiming = hoursMap[day]?.join(', ') ?? '';
 
-      return Text('$day: $start - $end');
-    }).toList();
-  }
+      if (dayTiming == lastTiming) {
+        currentDays.add(day);
+      } else {
+        if (currentDays.isNotEmpty && lastTiming.isNotEmpty) {
+          consolidatedHours
+              .add({"days": formatDayRange(currentDays), "timing": lastTiming});
+        }
+        currentDays = [day];
+        lastTiming = dayTiming;
+      }
+    }
 
-  String _formatTime(String time) {
-    int hour = int.parse(time.substring(0, 2));
-    int minute = int.parse(time.substring(2, 4));
-    String period = hour >= 12 ? 'PM' : 'AM';
-    hour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
-    return '$hour:${minute.toString().padLeft(2, '0')} $period';
+    if (currentDays.isNotEmpty && lastTiming.isNotEmpty) {
+      consolidatedHours
+          .add({"days": formatDayRange(currentDays), "timing": lastTiming});
+    }
+
+    List<Widget> hoursWidgets = [];
+    for (var entry in consolidatedHours) {
+      hoursWidgets.add(
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${entry["days"]}:',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            Text(
+              entry["timing"]!,
+              style: TextStyle(fontSize: 16),
+            ),
+            SizedBox(height: 8),
+          ],
+        ),
+      );
+    }
+
+    return hoursWidgets;
   }
 }
