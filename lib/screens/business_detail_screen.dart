@@ -1,16 +1,29 @@
+import 'package:bizhunt/utils/common_widgets.dart';
 import 'package:bizhunt/utils/date_formatter.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class BusinessDetailScreen extends StatelessWidget {
   final Map<String, dynamic> business;
 
-  const BusinessDetailScreen({Key? key, required this.business})
-      : super(key: key);
+  const BusinessDetailScreen({super.key, required this.business});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          launchUrl(Uri.parse('tel:${business['display_phone']}'),
+              mode: LaunchMode.externalApplication);
+        },
+        backgroundColor: const Color(0XFF3F51B5),
+        child: const Icon(
+          Icons.call_outlined,
+          color: Colors.white,
+        ),
+      ),
       appBar: AppBar(
         title: Text(business['name']),
       ),
@@ -20,21 +33,18 @@ class BusinessDetailScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Business Image
-              Container(
-                height: 220,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
-                  image: DecorationImage(
-                    image: NetworkImage(business['image_url']),
-                    fit: BoxFit.cover,
-                  ),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: CachedNetworkImage(
+                  imageUrl: business['image_url'],
+                  height: 300,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  placeholder: (context, url) => loadingIndicator(),
+                  errorWidget: (context, url, error) => const Icon(Icons.error),
                 ),
               ),
-              SizedBox(height: 16),
-
-              // Business Name and Price
+              const SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -48,34 +58,30 @@ class BusinessDetailScreen extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    business['price'] != null && business['price'] != '\$\$'
+                    business['price'] != null &&
+                            RegExp(r'\d').hasMatch(business['price'])
                         ? business['price']
                         : '',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.w500),
                   ),
                 ],
               ),
               const SizedBox(height: 8),
-
-              // Categories
               Text(
                 business['categories']
                     .map((category) => category['title'])
                     .join(', '),
                 style: TextStyle(fontSize: 16, color: Colors.grey),
               ),
-              SizedBox(height: 8),
-
+              const SizedBox(height: 8),
               Row(
                 children: [
-                  // Review Count Text
                   Text(
                     '${business['review_count']} Reviews',
                     style: const TextStyle(fontSize: 16, color: Colors.grey),
                   ),
                   const SizedBox(width: 8),
-
-                  // Rating Bar
                   RatingBarIndicator(
                     rating: business['rating'].toDouble(),
                     itemBuilder: (context, _) => const Icon(
@@ -89,8 +95,6 @@ class BusinessDetailScreen extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 16),
-
-              // Business Address
               const Text(
                 'Address',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -100,25 +104,21 @@ class BusinessDetailScreen extends StatelessWidget {
                 business['location']['display_address'].join(', '),
                 style: TextStyle(fontSize: 16),
               ),
-              SizedBox(height: 16),
-
-              // Business Hours
+              const SizedBox(height: 16),
               if (business['business_hours'] != null)
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'Hours',
                       style:
                           TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     ...getFormattedBusinessHours(business['business_hours'])
                   ],
                 ),
-              SizedBox(height: 16),
-
-              // Open/Closed Status & Call Button
+              const SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -133,13 +133,6 @@ class BusinessDetailScreen extends StatelessWidget {
                               ? Colors.green
                               : Colors.red,
                     ),
-                  ),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      // Call logic
-                    },
-                    icon: Icon(Icons.phone),
-                    label: Text(business['display_phone']),
                   ),
                 ],
               ),
@@ -210,13 +203,13 @@ class BusinessDetailScreen extends StatelessWidget {
           children: [
             Text(
               '${entry["days"]}:',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             Text(
               entry["timing"]!,
-              style: TextStyle(fontSize: 16),
+              style: const TextStyle(fontSize: 16),
             ),
-            SizedBox(height: 8),
+           const SizedBox(height: 8),
           ],
         ),
       );

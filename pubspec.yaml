@@ -18,9 +18,10 @@ dependencies:
   build_runner: ^2.4.13
   mockito: ^5.4.4
   flutter_rating_bar: ^4.0.1
-  animation_search_bar: ^0.0.10
   cached_network_image: ^3.4.1
   loading_indicator: ^3.1.1
+  flutter_riverpod: ^2.6.1 # for search form library
+  url_launcher: ^6.3.1
 
 dev_dependencies:
   flutter_lints: ^4.0.0

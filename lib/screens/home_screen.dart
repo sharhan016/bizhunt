@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:animation_search_bar/animation_search_bar.dart';
+import 'package:bizhunt/packages/animated_search_field.dart';
 import 'package:bizhunt/screens/business_detail_screen.dart';
 import 'package:bizhunt/utils/common_widgets.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -18,6 +18,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final ScrollController _scrollController = ScrollController();
   final TextEditingController searchController = TextEditingController();
   Timer? _debounce;
+  final FocusNode _searchFocusNode = FocusNode();
 
   @override
   void initState() {
@@ -63,6 +64,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _debounce?.cancel();
     searchController.dispose();
     _scrollController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -84,7 +86,8 @@ class _HomeScreenState extends State<HomeScreen> {
           title: AnimationSearchBar(
               backIconColor: Colors.black,
               isBackButtonVisible: false,
-              centerTitle: 'Businesses',
+              centerTitle: 'BizHunt',
+              focusNode: _searchFocusNode,
               onChanged: (text) {
                 context.read<BusinessBloc>().add(text.isEmpty
                     ? FetchBusinesses("NYC")
@@ -106,9 +109,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ? state.businesses.length
                   : state.businesses.length + 1,
               itemBuilder: (context, index) {
-                // if (index == 0) {
-                //   return loadingIndicator();
-                // }
                 if (index == state.businesses.length) {
                   return loadingIndicator();
                 }
@@ -146,6 +146,7 @@ class _HomeScreenState extends State<HomeScreen> {
         : business['image_url'];
     return GestureDetector(
       onTap: () {
+        _searchFocusNode.unfocus();
         Navigator.of(context).push(MaterialPageRoute(
             builder: (_) => BusinessDetailScreen(business: business)));
       },
