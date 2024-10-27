@@ -83,6 +83,7 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
           title: AnimationSearchBar(
               backIconColor: Colors.black,
+              isBackButtonVisible: false,
               centerTitle: 'Businesses',
               onChanged: (text) {
                 context.read<BusinessBloc>().add(text.isEmpty
@@ -105,6 +106,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   ? state.businesses.length
                   : state.businesses.length + 1,
               itemBuilder: (context, index) {
+                // if (index == 0) {
+                //   return loadingIndicator();
+                // }
                 if (index == state.businesses.length) {
                   return loadingIndicator();
                 }

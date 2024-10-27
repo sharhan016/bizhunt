@@ -3,11 +3,13 @@ import 'package:loading_indicator/loading_indicator.dart';
 
 Widget loadingIndicator() {
   return const Center(
-    child: LoadingIndicator(
-        indicatorType: Indicator.ballPulse,
-        colors: [Colors.white],
-        strokeWidth: 2,
-        backgroundColor: Colors.black,
-        pathBackgroundColor: Colors.black),
+    child: SizedBox(
+      height: 50,
+      child: LoadingIndicator(
+          indicatorType: Indicator.ballClipRotateMultiple,
+          colors: [Color(0XFF3F51B5)],
+          strokeWidth: 2,
+          pathBackgroundColor: Colors.black),
+    ),
   );
 }
