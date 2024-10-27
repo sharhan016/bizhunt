@@ -1,16 +1,18 @@
-# bizhunt
 
-A new Flutter project.
+# BizHunt
 
-## Getting Started
+BizHunt is a mobile application built with Flutter that allows users to search and explore business information. Using the Yelp API, BizHunt fetches detailed data about various businesses, including names, locations, ratings, and categories.
 
-This project is a starting point for a Flutter application.
+## Project Overview
 
-A few resources to get you started if this is your first Flutter project:
+This project uses the Yelp service API to retrieve up-to-date information about businesses around a specified location. Users can:
+- Search for businesses by name or category.
+- View detailed information about each business, including its address, rating, and available services.
+- See business information displayed in an easy-to-navigate interface, designed for a smooth user experience.
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+### State Management
+BizHunt uses the **Bloc** state management library, which helps maintain a structured flow of data and manage application state effectively, making it easier to track and control app behavior across different screens.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+### Requirements
+- **Flutter version**: 3.24.4 or higher
+- **Dart version**: 3.5.4 or higher
