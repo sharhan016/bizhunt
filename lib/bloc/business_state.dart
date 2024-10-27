@@ -14,7 +14,7 @@ final class BusinessLoaded extends BusinessState {
   final List<dynamic> businesses;
   final bool hasReachedMax;
 
-  BusinessLoaded(this.businesses, {this.hasReachedMax = false});
+BusinessLoaded(this.businesses, {this.hasReachedMax = false});
 
   @override
   List<Object?> get props => [businesses, hasReachedMax];
@@ -27,4 +27,14 @@ final class BusinessError extends BusinessState {
 
   @override
   List<Object?> get props => [message];
+}
+
+final class SearchedBusinessesLoaded extends BusinessState {
+  final List<dynamic> businesses;
+  final bool hasReachedMax;
+
+  SearchedBusinessesLoaded(this.businesses, this.hasReachedMax);
+
+  @override
+  List<Object?> get props => [businesses, hasReachedMax];
 }

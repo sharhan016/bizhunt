@@ -1,39 +1,104 @@
-import 'dart:io';
-
+import 'dart:async';
+import 'package:animation_search_bar/animation_search_bar.dart';
 import 'package:bizhunt/screens/business_detail_screen.dart';
+import 'package:bizhunt/utils/common_widgets.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/business_bloc.dart';
 
-class HomeScreen extends StatelessWidget {
-  final ScrollController _scrollController = ScrollController();
-
-  HomeScreen({Key? key}) : super(key: key);
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final ScrollController _scrollController = ScrollController();
+  final TextEditingController searchController = TextEditingController();
+  Timer? _debounce;
+
+  @override
+  void initState() {
+    super.initState();
     final businessBloc = BlocProvider.of<BusinessBloc>(context);
     _scrollController.addListener(() {
       if (_scrollController.position.pixels ==
-              _scrollController.position.maxScrollExtent &&
-          context.read<BusinessBloc>().state is BusinessLoaded) {
-        final state = context.read<BusinessBloc>().state as BusinessLoaded;
-        if (!state.hasReachedMax) {
-          businessBloc.add(
-              LoadMoreBusinessesEvent('NYC', businessBloc.currentPage + 1));
+          _scrollController.position.maxScrollExtent) {
+        if (searchController.text.isEmpty &&
+            businessBloc.state is BusinessLoaded) {
+          final state = businessBloc.state as BusinessLoaded;
+          if (!state.hasReachedMax) {
+            businessBloc.add(
+              LoadMoreBusinessesEvent('NYC', businessBloc.currentPage + 1),
+            );
+          }
+        } else if (searchController.text.isNotEmpty &&
+            businessBloc.state is SearchedBusinessesLoaded) {
+          final state = businessBloc.state as SearchedBusinessesLoaded;
+          print("Search LIST LOAD MORE");
+          if (!state.hasReachedMax) {
+            businessBloc.add(
+              LoadMoreSearchedBusinessEvent(
+                'NYC',
+                businessBloc.currentSearchPage + 1,
+                searchController.text,
+              ),
+            );
+          }
         }
       }
     });
+    searchController.addListener(() {
+      final text = searchController.text;
+      if (text.isEmpty) {
+        businessBloc.add(ShowLoadedBusinessesEvent());
+      }
+    });
+  }
 
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    searchController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged(String text) {
+    if (_debounce?.isActive ?? false) _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 500), () {
+      context.read<BusinessBloc>().add(
+            text.isEmpty
+                ? FetchBusinesses("NYC")
+                : FetchBusinessSearchEvent("NYC", text),
+          );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Businesses'),
-      ),
+          title: AnimationSearchBar(
+              backIconColor: Colors.black,
+              centerTitle: 'Businesses',
+              onChanged: (text) {
+                context.read<BusinessBloc>().add(text.isEmpty
+                    ? FetchBusinesses("NYC")
+                    : FetchBusinessSearchEvent("NYC", text));
+                print("Search text: $text");
+              },
+              duration: const Duration(milliseconds: 500),
+              searchBarWidth: MediaQuery.of(context).size.width - 30,
+              searchTextEditingController: searchController,
+              horizontalPadding: 1)),
       body: BlocBuilder<BusinessBloc, BusinessState>(
         builder: (context, state) {
           if (state is BusinessLoading && state is! BusinessLoaded) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (state is BusinessLoaded) {
+            return loadingIndicator();
+          } else if (state is BusinessLoaded && searchController.text.isEmpty) {
             return ListView.builder(
               controller: _scrollController,
               itemCount: state.hasReachedMax
@@ -41,28 +106,27 @@ class HomeScreen extends StatelessWidget {
                   : state.businesses.length + 1,
               itemBuilder: (context, index) {
                 if (index == state.businesses.length) {
-                  return Center(child: CircularProgressIndicator());
+                  return loadingIndicator();
                 }
 
                 final business = state.businesses[index];
                 return _buildTile(business, context);
-                /*
-                return ListTile(
-                  leading: business['image_url'] != null
-                      ? Image.network(business['image_url'],
-                          width: 50, height: 50)
-                      : const Icon(Icons.store),
-                  title: Text(business['name']),
-                  subtitle: Text('Rating: ${business['rating']}'),
-                  onTap: () {
-                    Navigator.of(context).push(MaterialPageRoute(
-                        builder: (_) =>
-                            BusinessDetailScreen(business: business)));
-                  },
-                );
-                */
               },
             );
+          } else if (searchController.text.isNotEmpty &&
+              state is SearchedBusinessesLoaded) {
+            return ListView.builder(
+                controller: _scrollController,
+                itemCount: state.hasReachedMax
+                    ? state.businesses.length
+                    : state.businesses.length + 1,
+                itemBuilder: (context, index) {
+                  if (index == state.businesses.length) {
+                    return loadingIndicator();
+                  }
+                  final business = state.businesses[index];
+                  return _buildTile(business, context);
+                });
           } else if (state is BusinessError) {
             return Center(child: Text(state.message));
           }
@@ -73,6 +137,9 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildTile(dynamic business, BuildContext context) {
+    final imageUrl = business['image_url'].toString().isEmpty
+        ? "https://upload.wikimedia.org/wikipedia/commons/d/d1/Image_not_available.png?20210219185637"
+        : business['image_url'];
     return GestureDetector(
       onTap: () {
         Navigator.of(context).push(MaterialPageRoute(
@@ -98,68 +165,43 @@ class HomeScreen extends StatelessWidget {
             Stack(
               children: [
                 ClipRRect(
-                  borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(12)),
-                  child: Image.network(
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(12)),
+                    child: CachedNetworkImage(
+                      imageUrl: imageUrl,
+                      height: 200,
+                      width: MediaQuery.of(context).size.width,
+                      fit: BoxFit.cover,
+                      errorWidget: (context, url, error) =>
+                          const Icon(Icons.error),
+                    )
+                    /*Image.network(
                     business['image_url'],
                     height: 200,
                     width: MediaQuery.of(context).size.width,
                     fit: BoxFit.cover,
-                  ),
-                ),
-                Positioned(
-                  top: 8,
-                  left: 8,
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.6),
-                      borderRadius: BorderRadius.circular(8),
+                  )*/
                     ),
-                    child: Text(
-                      '${business['categories'][0]['title']}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
+                if ((business['categories'] as List).isNotEmpty)
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.6),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '${business['categories'][0]['title']}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                // Positioned(
-                //   bottom: -5,
-                //   left: 4,
-                //   child: Container(
-                //     padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                //     margin: EdgeInsets.only(bottom: 4),
-                //     decoration: BoxDecoration(
-                //         color: Colors.white,
-                //         borderRadius: BorderRadius.only(
-                //             topLeft: Radius.circular(0),
-                //             topRight: Radius.circular(9))),
-                //     child: Text(
-                //       business['categories'][0]['title'],
-                //       style: TextStyle(
-                //         fontSize: 14,
-                //         fontWeight: FontWeight.w600,
-                //         color: Colors.black87,
-                //       ),
-                //     ),
-                //   ),
-                // Row(
-                //   children: [
-                //     Icon(Icons.access_time, color: Colors.white, size: 16),
-                //     SizedBox(width: 4),
-                //     Text(
-                //       '40 mins • 8.5 km',
-                //       style: TextStyle(
-                //         color: Colors.white,
-                //         fontSize: 14,
-                //       ),
-                //     ),
-                //   ],
-                // ),
-                // ),
               ],
             ),
             Padding(
